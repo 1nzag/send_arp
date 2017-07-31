@@ -4,8 +4,14 @@ struct rs_packet
 {
 	struct ether_header eth_header;
 	struct arphdr arp;
+	struct arp_data
+	{
+		uint8_t sha[6];
+		uint8_t dha[6];
+		uint32_t sip;
+		uint32_t dip;
+	}data;
 };
-
 
 
 void get_addr(uint8_t MAC_addr[6],struct in_addr* IP_addr,char* interface)
@@ -40,10 +46,10 @@ void rs_ARP(pcap_t* handle, unsigned char MAC_addr[6], struct in_addr* IP1, stru
 	p.arp.ar_op = htons(mode);
 
 
-	memcpy(p.arp.__ar_sha,MAC_addr,6);
-	memset(p.arp.__ar_tha,0xff,6);
-	p.arp.__ar_sip = IP1->s_addr;
-	p.arp.__ar_tip = IP2->s_addr;
+	memcpy(p.data.sha,MAC_addr,6);
+	memset(p.data.dha,0xff,6);
+	p.data.sip = IP1->s_addr;
+	p.data.dip = IP2->s_addr;
 	
 
 	pcap_sendpacket(handle,stream,sizeof(struct rs_packet));
