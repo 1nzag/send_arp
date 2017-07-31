@@ -6,6 +6,7 @@ int main(int argc, char* argv[])
 	pcap_t* handle;
 	char errbuf[PCAP_ERRBUF_SIZE];
 	uint8_t MAC_addr[6] = {0,};
+	uint8_t senders_MAC[6] = {0,};
 	struct in_addr my_IP;
 	struct in_addr sender_ip;
 	struct in_addr target_ip;
@@ -24,6 +25,9 @@ int main(int argc, char* argv[])
 	
 	get_addr(MAC_addr,&my_IP ,argv[1]);
 	rs_ARP(handle,MAC_addr,&my_IP , &sender_ip,1);
-	
+
+	//get_senders_mac(sender, sender_ip, senders_MAC);
+
+	printf("%s\n",inet_ntoa(target_ip));
 	return 0;
 }
