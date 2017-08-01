@@ -17,17 +17,16 @@ int main(int argc, char* argv[])
 		printf("Usage: ./send_arp [interface] [sender_ip] [target_ip]\n");
 	}
 	*/
-	
 	inet_aton(argv[2],&sender_ip);
 	inet_aton(argv[3],&target_ip);
-
+	printf("sender ip : %x\n", sender_ip);
 	handle = pcap_open_live(argv[1],BUFSIZ,1,1000,errbuf);
 	
 	get_addr(MAC_addr,&my_IP ,argv[1]);
-	rs_ARP(handle,MAC_addr,&my_IP , &sender_ip,1);
+	rs_ARP(handle,MAC_addr,&my_IP , &sender_ip,1); // request mode
 
 	//get_senders_mac(sender, sender_ip, senders_MAC);
 
-	printf("%s\n",inet_ntoa(target_ip));
+	rs_ARP(handle, MAC_addr, &target_ip, &sender_ip, 0); //send mode
 	return 0;
 }
