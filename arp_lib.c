@@ -1,18 +1,12 @@
 #include "arp_lib.h"
 
-struct rs_packet
+struct arp_data
 {
-	struct ether_header eth_header;
-	struct arphdr arp;
-	struct arp_data
-	{
-		uint8_t sha[6];
-		uint8_t dha[6];
-		uint32_t sip;
-		uint32_t dip;
-	}data;
+	uint8_t sha[6];
+	uint32_t sip;
+	uint8_t dha[6];
+	uint32_t dip;
 };
-
 
 void get_addr(uint8_t MAC_addr[6],struct in_addr* IP_addr,char* interface)
 {
@@ -29,30 +23,37 @@ void get_addr(uint8_t MAC_addr[6],struct in_addr* IP_addr,char* interface)
 	IP_addr->s_addr = *(uint32_t*)(ifr.ifr_addr.sa_data+2);
 }
 
-void rs_ARP(pcap_t* handle, unsigned char MAC_addr[6], struct in_addr* IP1, struct in_addr* IP2,int mode)
+void rs_ARP(pcap_t* handle, uint8_t MAC_addr[6],uint8_t dest_MAC[6] ,struct in_addr* IP1, struct in_addr* IP2, int mode)
 {
-	struct rs_packet p;
-	const u_char* stream;
-	stream = &p;
+	struct arp_data data;
+	struct ether_header eth_header;
+	struct arphdr arp;
+	const u_char stream[sizeof(struct arp_data) + sizeof(struct ether_header) + sizeof(struct arphdr)];
+	const u_char* stream_idx;
+	memcpy(eth_header.ether_dhost,dest_MAC,6);
+	memcpy(eth_header.ether_shost,MAC_addr,6);
+	eth_header.ether_type = htons(0x0806);
 
-	memset(p.eth_header.ether_dhost,0xff,6);
-	memcpy(p.eth_header.ether_shost,MAC_addr,6);
-	p.eth_header.ether_type = htons(0x0806);
-
-	p.arp.ar_hrd = htons(1);
-	p.arp.ar_pro = htons(0x0800);
-	p.arp.ar_hln = (uint8_t)6;
-	p.arp.ar_pln = (uint8_t)4;
-	p.arp.ar_op = htons(mode);
+	arp.ar_hrd = htons(1);
+	arp.ar_pro = htons(0x0800);
+	arp.ar_hln = (uint8_t)6;
+	arp.ar_pln = (uint8_t)4;
+	arp.ar_op = htons((uint16_t)mode);
 
 
-	memcpy(p.data.sha,MAC_addr,6);
-	memset(p.data.dha,0xff,6);
-	p.data.sip = htonl(IP1->s_addr);
-	p.data.dip = htonl(IP2->s_addr);
+	memcpy(data.sha,MAC_addr,6);
+	data.sip = IP1->s_addr;
+	memset(data.dha,0xff,6);
+	data.dip = IP2->s_addr;
 	
+	stream_idx = stream;
+	memcpy(stream,(const u_char*)&eth_header,sizeof(struct ether_header));
+	stream_idx += sizeof(struct ether_header);
+	memcpy(stream_idx,(const u_char*)&arp,sizeof(struct arphdr));
+	stream_idx += sizeof(struct arphdr);
+	memcpy(stream_idx,(const u_char*)&data,sizeof(struct arp_data));
 
-	pcap_sendpacket(handle,stream,sizeof(struct rs_packet));
+	pcap_sendpacket(handle,stream,sizeof(stream));
 }
 	
 void get_senders_mac(pcap_t *handle, struct in_addr* sender_IP, uint8_t MAC_addr[6])
@@ -60,19 +61,19 @@ void get_senders_mac(pcap_t *handle, struct in_addr* sender_IP, uint8_t MAC_addr
 	struct pcap_pkthdr *header;
 	const u_char *p_data;
 	struct ether_header *eth_header;
-	struct rs_packet *p;
+	struct arp_data *data;
 
 	while(1)
 	{
 		pcap_next_ex(handle, &header, &p_data);
-		eth_hedaer = (struct ether_header*)p_data;
-		if(ntohs(eth_header.ether_type) == 0x0806)
+		eth_header = (struct ether_header*)p_data;
+		if(ntohs(eth_header->ether_type) == 0x0806)
 		{
-			p = (struct rs_packet*)(p_data + 14);
-			if((p->data).sip == sender_IP->s_addr)
+			data = (struct rs_packet*)(p_data + 14 + sizeof(struct arphdr));
+			if(data->sip == sender_IP->s_addr)
 			{
 				printf("[*] detected sender's ARP!\n");
-				memcpy(&(p->data).sha,MAC_addr,6);
+				memcpy(data->sha,MAC_addr,6);
 				break;
 			}
 		}
