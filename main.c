@@ -11,6 +11,7 @@ int main(int argc, char* argv[])
 	struct in_addr my_IP;
 	struct in_addr sender_ip;
 	struct in_addr target_ip;
+	int i;
 	
 	/*	
 	if(argc != 4)
@@ -28,9 +29,10 @@ int main(int argc, char* argv[])
 	printf("%s\n",inet_ntoa(my_IP));
 	rs_ARP(handle,MAC_addr,broadcast_MAC,&my_IP , &sender_ip,1); // request mode
 
-	get_senders_mac(sender, sender_ip, senders_MAC);
-
-	rs_ARP(handle,MAC_addr,senders_MAC ,&target_ip, &sender_ip, 0); //send mode
-	close(handle);
+	get_senders_mac(handle, &sender_ip, senders_MAC);
+	for(i=0;i<10;i++)
+	{
+		rs_ARP(handle,MAC_addr,senders_MAC ,&target_ip, &sender_ip, 2); //send mode
+	}
 	return 0;
 }

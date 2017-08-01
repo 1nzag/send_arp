@@ -61,7 +61,6 @@ void get_senders_mac(pcap_t *handle, struct in_addr* sender_IP, uint8_t MAC_addr
 {
 	struct pcap_pkthdr *header;
 	const u_char *p_data;
-	struct ether_header *eth_header;
 	struct rs_packet *p;
 
 
@@ -69,12 +68,12 @@ void get_senders_mac(pcap_t *handle, struct in_addr* sender_IP, uint8_t MAC_addr
 	{
 		pcap_next_ex(handle, &header, &p_data);
 		p = (struct rs_packet*)p_data;
-		if(ntohs(eth_header->ether_type) == 0x0806)
+		if(ntohs((p->eth_header).ether_type) == 0x0806)
 		{
 			if((p->data).sip == sender_IP->s_addr)
 			{
 				printf("[*] detected sender's ARP!\n");
-				memcpy((p->data).sha,MAC_addr,6);
+				memcpy(MAC_addr,(p->data).sha,6);
 				break;
 			}
 		}
