@@ -26,14 +26,17 @@ void get_addr(uint8_t MAC_addr[6],struct in_addr* IP_addr,char* interface)
 	{
 		MAC_addr[i] = ((uint8_t*)ifr.ifr_hwaddr.sa_data)[i];
 	}
-	IP_addr->s_addr = *(uint32_t*)(ifr.ifr_addr.sa_data+4);
+
+	ioctl(s,SIOCGIFADDR, &ifr);
+	IP_addr->s_addr = *(uint32_t*)(ifr.ifr_addr.sa_data+2);
+
 }
 
 void rs_ARP(pcap_t* handle, uint8_t MAC_addr[6],uint8_t dest_MAC[6] ,struct in_addr* IP1, struct in_addr* IP2, int mode)
 {
 	struct rs_packet p;
 	const u_char *stream;
-	stream = &p;
+	stream = (const u_char*)&p;
 	memcpy(p.eth_header.ether_dhost,dest_MAC,6);
 	memcpy(p.eth_header.ether_shost,MAC_addr,6);
 	p.eth_header.ether_type = htons(0x0806);
