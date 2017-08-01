@@ -5,7 +5,7 @@ struct __attribute__((packed)) rs_packet
 {
 	struct ether_header eth_header;
 	struct arphdr arp;
-	struct arp_data
+	struct __attribute__((packed)) arp_data
 	{
 		uint8_t sha[6];
 		uint32_t sip;
